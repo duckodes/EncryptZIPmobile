@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>ZIP 加密工具</title>
+
+    <meta http-equiv="Content-Security-Policy" content="
+default-src 'self';
+script-src 'self';
+connect-src 'none';
+img-src 'self' data:;
+style-src 'self' 'unsafe-inline';
+">
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.2/jszip.min.js"></script> -->
+    <script src="./jszip.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --card-hover: #293548;
+            --border: #475569;
+            --text: #f8fafc;
+            --sub: #cbd5e1;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .header p {
+            color: var(--sub);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        input[type=file],
+        input[type=password] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #334155;
+            color: var(--text);
+            margin-top: 10px;
+        }
+
+        input::placeholder {
+            color: #94a3b8;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            margin-top: 12px;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        .info {
+            margin-top: 12px;
+            color: var(--sub);
+            font-size: .95rem;
+            line-height: 1.6;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .file-list {
+            margin-top: 12px;
+            background: #334155;
+            border-radius: 10px;
+            padding: 12px;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+        .file-item {
+            padding: 5px 0;
+            color: var(--sub);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #94a3b8;
+            font-size: .9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header">
+            <h1>🔒 ZIP 加密工具</h1>
+            <p>所有加密與解密都在你的瀏覽器本機執行</p>
+        </div>
+
+        <div class="card">
+
+            <h2>加密檔案</h2>
+
+            <input type="file" id="encryptFiles" multiple onchange="showFiles()">
+
+            <div class="file-list" id="fileList">
+                尚未選擇檔案
+            </div>
+
+            <input type="password" id="encryptPassword" placeholder="請輸入密碼">
+
+            <button onclick="encryptFiles()">
+                建立加密檔案
+            </button>
+
+            <div id="encryptStatus" class="status">
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <h2>解密檔案</h2>
+
+            <input type="file" id="decryptFile" accept=".ezip">
+
+            <input type="password" id="decryptPassword" placeholder="請輸入密碼">
+
+            <button onclick="decryptFile()">
+                解密並下載 ZIP
+            </button>
+
+            <div id="decryptStatus" class="status">
+            </div>
+
+        </div>
+
+        <div class="footer">
+            AES‑256 加密 | 純前端運作 | GitHub Pages 可直接部署
+        </div>
+
+    </div>
+
+    <script>
+
+        function formatSize(bytes) {
+
+            if (bytes < 1024) {
+                return bytes + " B";
+            }
+
+            if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(1) + " KB";
+            }
+
+            if (bytes < 1024 * 1024 * 1024) {
+                return (bytes / 1024 / 1024).toFixed(1) + " MB";
+            }
+
+            return (bytes / 1024 / 1024 / 1024).toFixed(1) + " GB";
+        }
+
+        function showFiles() {
+
+            const files =
+                document.getElementById(
+                    "encryptFiles"
+                ).files;
+
+            const list =
+                document.getElementById(
+                    "fileList"
+                );
+
+            if (files.length === 0) {
+
+                list.innerHTML = "尚未選擇檔案";
+                return;
+            }
+
+            let total = 0;
+            let html = "";
+
+            for (const file of files) {
+
+                total += file.size;
+
+                html +=
+                    `<div class="file-item">
+          📄 ${file.name}
+          (${formatSize(file.size)})
+        </div>`;
+            }
+
+            html +=
+                `<hr>
+     共 ${files.length} 個檔案
+     ・ ${formatSize(total)}
+    `;
+
+            list.innerHTML = html;
+        }
+
+        async function deriveKey(password) {
+
+            const encoder =
+                new TextEncoder();
+
+            const keyMaterial =
+                await crypto.subtle.importKey(
+                    "raw",
+                    encoder.encode(password),
+                    "PBKDF2",
+                    false,
+                    ["deriveKey"]
+                );
+
+            return crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: encoder.encode(
+                        "ZIP-Encrypt"
+                    ),
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                {
+                    name: "AES-GCM",
+                    length: 256
+                },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptFiles() {
+
+            const files =
+                document.getElementById(
+                    "encryptFiles"
+                ).files;
+
+            const password =
+                document.getElementById(
+                    "encryptPassword"
+                ).value;
+
+            if (files.length === 0) {
+
+                alert("請選擇檔案");
+                return;
+            }
+
+            if (!password) {
+
+                alert("請輸入密碼");
+                return;
+            }
+
+            const zip =
+                new JSZip();
+
+            for (const file of files) {
+
+                zip.file(
+                    file.name,
+                    file
+                );
+            }
+
+            document.getElementById(
+                "encryptStatus"
+            ).textContent =
+                "正在加密...";
+
+            const zipData =
+                await zip.generateAsync({
+                    type: "arraybuffer"
+                });
+
+            const key =
+                await deriveKey(password);
+
+            const iv =
+                crypto.getRandomValues(
+                    new Uint8Array(12)
+                );
+
+            const encrypted =
+                await crypto.subtle.encrypt(
+                    {
+                        name: "AES-GCM",
+                        iv
+                    },
+                    key,
+                    zipData
+                );
+
+            const result =
+                new Uint8Array(
+                    iv.length +
+                    encrypted.byteLength
+                );
+
+            result.set(iv);
+
+            result.set(
+                new Uint8Array(encrypted),
+                iv.length
+            );
+
+            const blob =
+                new Blob(
+                    [result]
+                );
+
+            const url =
+                URL.createObjectURL(blob);
+
+            const a =
+                document.createElement("a");
+
+            a.href = url;
+            a.download = "encrypted.ezip";
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            document.getElementById(
+                "encryptStatus"
+            ).textContent =
+                "✅ 加密完成";
+        }
+
+        async function decryptFile() {
+
+            const file =
+                document.getElementById(
+                    "decryptFile"
+                ).files[0];
+
+            const password =
+                document.getElementById(
+                    "decryptPassword"
+                ).value;
+
+            if (!file) {
+
+                alert("請選擇檔案");
+                return;
+            }
+
+            if (!password) {
+
+                alert("請輸入密碼");
+                return;
+            }
+
+            try {
+
+                document.getElementById(
+                    "decryptStatus"
+                ).textContent =
+                    "正在解密...";
+
+                const data =
+                    new Uint8Array(
+                        await file.arrayBuffer()
+                    );
+
+                const iv =
+                    data.slice(0, 12);
+
+                const encrypted =
+                    data.slice(12);
+
+                const key =
+                    await deriveKey(password);
+
+                const decrypted =
+                    await crypto.subtle.decrypt(
+                        {
+                            name: "AES-GCM",
+                            iv
+                        },
+                        key,
+                        encrypted
+                    );
+
+                const blob =
+                    new Blob(
+                        [decrypted],
+                        {
+                            type: "application/zip"
+                        }
+                    );
+
+                const url =
+                    URL.createObjectURL(blob);
+
+                const a =
+                    document.createElement("a");
+
+                a.href = url;
+                a.download =
+                    "decrypted.zip";
+
+                a.click();
+
+                URL.revokeObjectURL(url);
+
+                document.getElementById(
+                    "decryptStatus"
+                ).textContent =
+                    "✅ 解密完成";
+
+            }
+            catch (error) {
+
+                document.getElementById(
+                    "decryptStatus"
+                ).style.color =
+                    "#ef4444";
+
+                document.getElementById(
+                    "decryptStatus"
+                ).textContent =
+                    "❌ 密碼錯誤或檔案損毀";
+            }
+        }
+    </script>
+
+</body>
+
+</html>
