@@ -4,73 +4,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>AES ZIP</title>
+    <title>ZIP Vault</title>
 
     <script src="./zip.min.js"></script>
 
     <style>
+        :root {
+            --bg: #0b1120;
+            --card: #131c31;
+            --card2: #1b2742;
+            --border: #273552;
+            --text: #ffffff;
+            --sub: #b9c4db;
+            --blue: #3b82f6;
+            --blue-hover: #2563eb;
+            --green: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background: #111827;
-            color: #fff;
-            font-family: -apple-system, sans-serif;
-            max-width: 600px;
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top, #1e3a8a 0%, #0b1120 45%);
+            color: var(--text);
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "SF Pro Display",
+                "Segoe UI",
+                sans-serif;
+        }
+
+        .container {
+            max-width: 720px;
             margin: auto;
-            padding: 20px;
+            padding: 24px 18px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .hero p {
+            margin-top: 10px;
+            color: var(--sub);
         }
 
         .card {
-            background: #1f2937;
+            background: rgba(19, 28, 49, .92);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
             padding: 20px;
-            border-radius: 12px;
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, .25);
         }
 
-        input {
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .dropzone {
+            border: 2px dashed #3b82f6;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            background: var(--card2);
+            margin-bottom: 15px;
+        }
+
+        .dropzone span {
+            display: block;
+            color: var(--sub);
+            margin-top: 8px;
+        }
+
+        input[type=file] {
             width: 100%;
-            margin: 10px 0;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #374151;
-            background: #374151;
+        }
+
+        input[type=password] {
+            width: 100%;
+            margin-top: 12px;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--card2);
             color: #fff;
+            font-size: 16px;
+        }
+
+        input::placeholder {
+            color: #8ca0c9;
         }
 
         button {
             width: 100%;
-            padding: 12px;
-            background: #2563eb;
+            border: none;
+            border-radius: 14px;
+            padding: 15px;
+            margin-top: 12px;
+            background: var(--blue);
             color: #fff;
-            border: 0;
-            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
-        #status {
+        button:hover {
+            background: var(--blue-hover);
+        }
+
+        button:disabled {
+            opacity: .5;
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: var(--card2);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .filelist {
             margin-top: 15px;
+            max-height: 260px;
+            overflow: auto;
+            border-radius: 16px;
+            background: var(--card2);
+        }
+
+        .file {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .05);
+        }
+
+        .file:last-child {
+            border-bottom: none;
+        }
+
+        .name {
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .size {
+            color: var(--sub);
+            font-size: 13px;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .success {
+            color: var(--green);
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        .info {
+            margin-top: 18px;
+            color: var(--sub);
+            font-size: .9rem;
+            line-height: 1.7;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #8ca0c9;
+            font-size: .85rem;
+        }
+
+        @media(max-width:540px) {
+
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .file {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
         }
     </style>
+
 </head>
 
 <body>
 
-    <div class="card">
+    <div class="container">
 
-        <h2>建立 AES 密碼 ZIP</h2>
+        <div class="hero">
+            <h1>🔐 ZIP Vault</h1>
+            <p>建立 AES 密碼保護 ZIP 檔案</p>
+        </div>
 
-        <input type="file" id="files" multiple>
+        <div class="card">
 
-        <input type="password" id="password" placeholder="密碼">
+            <h2>建立加密 ZIP</h2>
 
-        <button id="createBtn">
-            建立 ZIP
-        </button>
+            <div class="dropzone">
+                <input type="file" id="files" multiple>
+                <span>
+                    選擇多個檔案進行壓縮加密
+                </span>
+                <span>
+                    iPhone Safari 不支援從網頁直接選資料夾
+                </span>
+            </div>
 
-        <div id="status"></div>
+            <input type="password" id="password" placeholder="輸入 ZIP 密碼">
+
+            <button id="createBtn">
+                建立加密 ZIP
+            </button>
+
+            <div class="stats">
+                <div class="badge" id="fileCount">
+                    0 個檔案
+                </div>
+
+                <div class="badge" id="totalSize">
+                    0 B
+                </div>
+            </div>
+
+            <div class="filelist" id="fileList">
+            </div>
+
+            <div id="status" class="status">
+            </div>
+
+            <div class="info">
+                • AES 加密 ZIP<br>
+                • 支援 iPhone、Android、Windows、Mac<br>
+                • 所有處理都在瀏覽器本機完成
+            </div>
+
+        </div>
+
+        <div class="footer">
+            ZIP Vault
+        </div>
 
     </div>
 
     <script>
 
+        const fileInput =
+            document.getElementById("files");
+
         const statusEl =
             document.getElementById("status");
+
+        const fileList =
+            document.getElementById("fileList");
+
+        const fileCount =
+            document.getElementById("fileCount");
+
+        const totalSize =
+            document.getElementById("totalSize");
+
+        fileInput.addEventListener(
+            "change",
+            renderFiles
+        );
 
         document
             .getElementById("createBtn")
@@ -79,81 +314,164 @@
                 createZip
             );
 
+        function formatSize(bytes) {
+
+            if (bytes < 1024) {
+                return bytes + " B";
+            }
+
+            if (bytes < 1024 * 1024) {
+                return (
+                    bytes / 1024
+                ).toFixed(1) + " KB";
+            }
+
+            if (bytes < 1024 * 1024 * 1024) {
+                return (
+                    bytes / 1024 / 1024
+                ).toFixed(1) + " MB";
+            }
+
+            return (
+                bytes / 1024 / 1024 / 1024
+            ).toFixed(1) + " GB";
+        }
+
+        function renderFiles() {
+
+            const files =
+                fileInput.files;
+
+            fileList.innerHTML = "";
+
+            let total = 0;
+
+            for (const file of files) {
+
+                total += file.size;
+
+                const div =
+                    document.createElement("div");
+
+                div.className = "file";
+
+                div.innerHTML =
+                    `
+        <div class="name">
+        📄 ${file.name}
+        </div>
+
+        <div class="size">
+        ${formatSize(file.size)}
+        </div>
+        `;
+
+                fileList.appendChild(div);
+            }
+
+            fileCount.textContent =
+                files.length + " 個檔案";
+
+            totalSize.textContent =
+                formatSize(total);
+        }
+
         async function createZip() {
 
             const files =
-                document.getElementById("files").files;
+                fileInput.files;
 
             const password =
-                document.getElementById("password").value;
+                document
+                    .getElementById("password")
+                    .value;
 
             if (!files.length) {
 
-                alert("選擇檔案");
+                alert("請選擇檔案");
 
                 return;
             }
 
             if (!password) {
 
-                alert("輸入密碼");
+                alert("請輸入密碼");
 
                 return;
             }
 
+            statusEl.className = "status";
+
             statusEl.textContent =
-                "建立中...";
+                "⏳ 建立 ZIP 中...";
 
-            const blobWriter =
-                new zip.BlobWriter(
-                    "application/zip"
-                );
+            try {
 
-            const writer =
-                new zip.ZipWriter(
-                    blobWriter,
-                    {
-                        password,
-                        encryptionStrength: 3
-                    }
-                );
+                const blobWriter =
+                    new zip.BlobWriter(
+                        "application/zip"
+                    );
 
-            for (const file of files) {
+                const writer =
+                    new zip.ZipWriter(
+                        blobWriter,
+                        {
+                            password,
+                            encryptionStrength: 3
+                        }
+                    );
 
-                await writer.add(
-                    file.name,
-                    new zip.BlobReader(file)
-                );
+                for (const file of files) {
+
+                    await writer.add(
+                        file.name,
+                        new zip.BlobReader(file)
+                    );
+                }
+
+                const blob =
+                    await writer.close();
+
+                const url =
+                    URL.createObjectURL(blob);
+
+                const link =
+                    document.createElement("a");
+
+                link.href = url;
+
+                link.download =
+                    "encrypted.zip";
+
+                document.body
+                    .appendChild(link);
+
+                link.click();
+
+                setTimeout(() => {
+
+                    URL.revokeObjectURL(url);
+
+                    link.remove();
+
+                }, 1000);
+
+                statusEl.className =
+                    "status success";
+
+                statusEl.textContent =
+                    "✅ 已下載 encrypted.zip";
+
+            } catch (err) {
+
+                console.error(err);
+
+                statusEl.className =
+                    "status error";
+
+                statusEl.textContent =
+                    "❌ 建立 ZIP 失敗";
             }
-
-            const blob =
-                await writer.close();
-
-            const url =
-                URL.createObjectURL(blob);
-
-            const a =
-                document.createElement("a");
-
-            document.body.appendChild(a);
-
-            a.href = url;
-
-            a.download =
-                "encrypted.zip";
-
-            a.click();
-
-            setTimeout(() => {
-
-                URL.revokeObjectURL(url);
-
-                a.remove();
-
-            }, 1000);
-
-            statusEl.textContent =
-                "完成";
         }
     </script>
 
